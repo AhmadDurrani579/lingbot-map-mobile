@@ -127,7 +127,7 @@ def load_model(args, device):
 
     if args.model_path:
         print(f"Loading checkpoint: {args.model_path}")
-        ckpt = torch.load(args.model_path, map_location=device, weights_only=False)
+        ckpt = torch.load(args.model_path, map_location="cpu", weights_only=False)
         state_dict = ckpt.get("model", ckpt)
         missing, unexpected = model.load_state_dict(state_dict, strict=False)
         if missing:
@@ -334,6 +334,7 @@ def main():
     if dtype != torch.float32 and getattr(model, "aggregator", None) is not None:
         print(f"Casting aggregator to {dtype} (heads kept in fp32)")
         model.aggregator = model.aggregator.to(dtype=dtype)
+
 
     images = images.to(device)
     num_frames = images.shape[0]

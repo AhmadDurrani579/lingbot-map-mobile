@@ -194,18 +194,26 @@ class GCTBase(nn.Module, PyTorchModelHubMixin, ABC):
     ) -> Dict[str, torch.Tensor]:
         if self.depth_head is None:
             return {}
-
-        aggregated_tokens_list_fp32 = [t.float() for t in aggregated_tokens_list]
-        images_fp32 = images.float()
-
-        with torch.amp.autocast('cuda', enabled=False):
-            depth, depth_conf = self.depth_head(
-                aggregated_tokens_list_fp32,
-                images=images_fp32,
-                patch_start_idx=patch_start_idx
-            )
-
+        num_frames = images.shape[0]
+        depth_list = []
+        depth_conf_list = []
+        self.depth_head = self.depth_head.cpu()
+        for i in range(num_frames):
+            tokens_i = [t[i:i+1].float().cpu() for t in aggregated_tokens_list]
+            image_i = images[i:i+1].float().cpu()
+            with torch.amp.autocast("cpu", enabled=False):
+                depth_i, depth_conf_i = self.depth_head(
+                    tokens_i,
+                    images=image_i,
+                    patch_start_idx=patch_start_idx
+                )
+            depth_list.append(depth_i.cuda())
+            depth_conf_list.append(depth_conf_i.cuda())
+        self.depth_head = self.depth_head.cuda()
+        depth = torch.cat(depth_list, dim=0)
+        depth_conf = torch.cat(depth_conf_list, dim=0)
         return {"depth": depth, "depth_conf": depth_conf}
+
 
     def _predict_points(
         self,
@@ -216,17 +224,24 @@ class GCTBase(nn.Module, PyTorchModelHubMixin, ABC):
     ) -> Dict[str, torch.Tensor]:
         if self.point_head is None:
             return {}
-
-        aggregated_tokens_list_fp32 = [t.float() for t in aggregated_tokens_list]
-        images_fp32 = images.float()
-
-        with torch.amp.autocast('cuda', enabled=False):
-            pts3d, pts3d_conf = self.point_head(
-                aggregated_tokens_list_fp32,
-                images=images_fp32,
-                patch_start_idx=patch_start_idx
-            )
-
+        num_frames = images.shape[0]
+        pts3d_list = []
+        pts3d_conf_list = []
+        self.point_head = self.point_head.cpu()
+        for i in range(num_frames):
+            tokens_i = [t[i:i+1].float().cpu() for t in aggregated_tokens_list]
+            image_i = images[i:i+1].float().cpu()
+            with torch.amp.autocast("cpu", enabled=False):
+                pts3d_i, pts3d_conf_i = self.point_head(
+                    tokens_i,
+                    images=image_i,
+                    patch_start_idx=patch_start_idx
+                )
+            pts3d_list.append(pts3d_i.cuda())
+            pts3d_conf_list.append(pts3d_conf_i.cuda())
+        self.point_head = self.point_head.cuda()
+        pts3d = torch.cat(pts3d_list, dim=0)
+        pts3d_conf = torch.cat(pts3d_conf_list, dim=0)
         return {"world_points": pts3d, "world_points_conf": pts3d_conf}
 
     def _predict_local_points(

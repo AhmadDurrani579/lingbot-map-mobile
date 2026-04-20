@@ -211,12 +211,13 @@ class DinoVisionTransformer(nn.Module):
         else:
             # Simply specify an output size instead of a scale factor
             kwargs["size"] = (w0, h0)
+                    
         patch_pos_embed = nn.functional.interpolate(
             patch_pos_embed.reshape(1, M, M, dim).permute(0, 3, 1, 2),
-            mode="bicubic",
-            antialias=self.interpolate_antialias,
+            mode="bilinear",
+            antialias=False,
             **kwargs,
-        )
+    )
         assert (w0, h0) == patch_pos_embed.shape[-2:]
         patch_pos_embed = patch_pos_embed.permute(0, 2, 3, 1).view(1, -1, dim)
         if not self.drop_cls_token:

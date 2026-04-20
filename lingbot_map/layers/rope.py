@@ -54,7 +54,9 @@ class PositionGetter:
         if (height, width) not in self.position_cache:
             y_coords = torch.arange(height, device=device)
             x_coords = torch.arange(width, device=device)
-            positions = torch.cartesian_prod(y_coords, x_coords)
+            grid_y, grid_x = torch.meshgrid(y_coords, x_coords, indexing='ij')
+            positions = torch.stack([grid_y.flatten(), grid_x.flatten()], dim=1)
+
             self.position_cache[height, width] = positions
 
         cached_positions = self.position_cache[height, width]
@@ -176,7 +178,7 @@ class RotaryPositionEmbedding2D(nn.Module):
         feature_dim = tokens.size(-1) // 2
 
         # Get frequency components
-        max_position = int(positions.max()) + 1
+        max_position = 1500
         cos_comp, sin_comp = self._compute_frequency_components(feature_dim, max_position, tokens.device, tokens.dtype)
 
         # Split features for vertical and horizontal processing

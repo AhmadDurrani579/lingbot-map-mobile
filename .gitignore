@@ -10,4 +10,7 @@ demo_render/
 CLAUDE.md
 .claude/
 .agents/
-skyseg.onnx
+skyseg.onnxmodels/*.mlpackage
+models/*.onnx
+models/*.onnx.data
+models/*.zip
